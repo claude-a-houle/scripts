@@ -100,6 +100,7 @@ awk 'BEGIN{
       if ( syscall == syscall_array_operation[syscall_index] )
       {
         syscall_array_op_time_spent[syscall_index] = syscall_array_op_time_spent[syscall_index] + syscall_timedelta
+        syscall_array_op_count[syscall_index]++
       }
     }
 
@@ -148,9 +149,13 @@ awk 'BEGIN{
 END{
   if ( OUTPUT_FORMAT == "raw" )
   {
+    printf("syscall_op,time_spent,count\n")
     for (syscall_index=1;syscall_index<=syscall_array_count;syscall_index++)
     {
-      printf("%s,%f\n", syscall_array_operation[syscall_index], syscall_array_op_time_spent[syscall_index])
+      printf("%s,%f,%d\n",
+        syscall_array_operation[syscall_index],
+        syscall_array_op_time_spent[syscall_index],
+        syscall_array_op_count[syscall_index])
     }
   }
 }'
