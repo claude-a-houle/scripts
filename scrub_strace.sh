@@ -147,13 +147,26 @@ awk 'BEGIN{
   }
 }
 END{
-  if ( OUTPUT_FORMAT == "raw" )
+  printf("\n")
+  if ( OUTPUT_FORMAT == "csv" )
   {
-    printf("\n")
-    printf("syscall_op,time_spent,count\n")
+    printf("syscall_operation,time_spent,count\n")
     for (syscall_index=1;syscall_index<=syscall_array_count;syscall_index++)
     {
-      printf("%s,%f,%d\n",
+      printf("%s%s%f%s%d\n",
+        syscall_array_operation[syscall_index],
+        OUTPUT_SEPARATOR,
+        syscall_array_op_time_spent[syscall_index],
+        OUTPUT_SEPARATOR,
+        syscall_array_op_count[syscall_index])
+    }
+  }
+  else
+  {
+    printf("%-32s %12s %9s\n", "syscall_operation", "time_spent", "count")
+    for (syscall_index=1;syscall_index<=syscall_array_count;syscall_index++)
+    {
+      printf("%-32s %12.9f %9d\n",
         syscall_array_operation[syscall_index],
         syscall_array_op_time_spent[syscall_index],
         syscall_array_op_count[syscall_index])
