@@ -163,6 +163,7 @@ END{
   }
   else
   {
+    printf("Summary\n")
     printf("%-32s %12s %9s\n", "syscall_operation", "time_spent", "count")
     for (syscall_index=1;syscall_index<=syscall_array_count;syscall_index++)
     {
@@ -171,6 +172,7 @@ END{
         syscall_array_op_time_spent[syscall_index],
         syscall_array_op_count[syscall_index])
     }
+    printf("\n")
   }
 }'
 
