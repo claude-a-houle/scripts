@@ -6,16 +6,18 @@ BASENAME=`basename $0`
 ERROR_MESSAGE=""
 TIME_DELTA_THRESHOLD=2
 OUTPUT_FORMAT="raw"
+SUMMARY="Y"
 
 display_usage ()
 {
    echo "\
-Usage: $BASENAME -f <strace_filename> [--timedelta] [--csv] [-v] [-h|--help]
+Usage: $BASENAME -f <strace_filename> [--timedelta] [--csv] [-v|--verbose] [--no-summary] [-h|--help]
 
    -f            strace filename
-   --timedelta   time delta from previous syscall seconds (DEFAULT: 2 seconds ; optional)
+   --timedelta   time delta threshold from previous syscall seconds (DEFAULT: 2 seconds ; optional)
    --csv         output in CSV format (DEFAULT: raw ; optional)
-   -v            verbose output (DEFAULT: non-verbose ; optional)
+   -v|--verbose  verbose output (DEFAULT: non-verbose ; optional)
+   --no-summary  (DEFAULT: on ; optional)
 
    -h|--help     display this help and exit (optional)
 "
@@ -34,13 +36,15 @@ function error_handler
 while [ "$1" != "" ]
 do
    case $1 in
-      "-f") shift;          STRACE_FILENAME="$1"; shift;;
-      "--timedelta") shift; TIME_DELTA_THRESHOLD="$1"; shift;;
-      "--csv") shift;       OUTPUT_FORMAT="csv";;
-      "-h") shift; HELP=1              ;;
-      "--help") shift; HELP=1          ;;
-      "-v") shift; VERBOSE="Y"         ;;
-         *) shift; ERROR_MESSAGE="Invalid Parameter -- $PARAMS";;
+      "-f")           shift; STRACE_FILENAME="$1"; shift;;
+      "--timedelta")  shift; TIME_DELTA_THRESHOLD="$1"; shift;;
+      "--csv")        shift; OUTPUT_FORMAT="csv";;
+      "--no-summary") shift; SUMMARY="N" ; VERBOSE="Y" ;;
+      "-h")           shift; HELP=1              ;;
+      "--help")       shift; HELP=1          ;;
+      "-v")           shift; VERBOSE="Y"         ;;
+      "--verbose")    shift; VERBOSE="Y"         ;;
+         *)           shift; ERROR_MESSAGE="Invalid Parameter -- $PARAMS";;
    esac
 done
 
@@ -68,6 +72,7 @@ cat "$STRACE_FILENAME" | \
 awk 'BEGIN{
   STRACE_FILENAME = "'"$STRACE_FILENAME"'"
   VERBOSE = "'"$VERBOSE"'"
+  SUMMARY = "'"$SUMMARY"'"
   TIME_DELTA_THRESHOLD = "'"$TIME_DELTA_THRESHOLD"'"
   TIME_DELTA_THRESHOLD = TIME_DELTA_THRESHOLD + 0
   OUTPUT_FORMAT = "'"$OUTPUT_FORMAT"'"
@@ -164,44 +169,47 @@ awk 'BEGIN{
   }
 }
 END{
-  printf("\n")
-  if ( OUTPUT_FORMAT == "csv" )
+  if (SUMMARY == "Y")
   {
-    # Summary in CSV (less info, but easier to copy/paste into s/s of course)
-    printf("syscall_operation,time_spent,count\n")
-    for (syscall_index=1;syscall_index<=syscall_array_count;syscall_index++)
-    {
-      printf("%s%s%f%s%d\n",
-        syscall_array_operation[syscall_index],
-        OUTPUT_SEPARATOR,
-        syscall_array_op_time_spent[syscall_index],
-        OUTPUT_SEPARATOR,
-        syscall_array_op_count[syscall_index])
-    }
-  }
-  else
-  {
-    # Summary in txt format
-    split(FIRST_STRACE_TS,a,".")
-    strace_start = strftime("%Y-%m-%d-%H.%M.%S", a[1])"."a[2]
-    split(LAST_STRACE_TS,a,".")
-    strace_end = strftime("%Y-%m-%d-%H.%M.%S", a[1])"."a[2]
-    strace_elapse = LAST_STRACE_TS - FIRST_STRACE_TS
-    printf("Summary\n")
-    printf("strace file:   %s\n", STRACE_FILENAME)
-    printf("strace start:  %s\n", strace_start)
-    printf("strace end:    %s\n", strace_end)
-    printf("strace elapse: %-12.6f\n", strace_elapse)
     printf("\n")
-    printf("%-32s %12s %9s\n", "syscall_operation", "time_spent", "count")
-    for (syscall_index=1;syscall_index<=syscall_array_count;syscall_index++)
+    if ( OUTPUT_FORMAT == "csv" )
     {
-      printf("%-32s %12.9f %9d\n",
-        syscall_array_operation[syscall_index],
-        syscall_array_op_time_spent[syscall_index],
-        syscall_array_op_count[syscall_index])
+      # Summary in CSV (less info, but easier to copy/paste into s/s of course)
+      printf("syscall_operation,time_spent,count\n")
+      for (syscall_index=1;syscall_index<=syscall_array_count;syscall_index++)
+      {
+        printf("%s%s%f%s%d\n",
+          syscall_array_operation[syscall_index],
+          OUTPUT_SEPARATOR,
+          syscall_array_op_time_spent[syscall_index],
+          OUTPUT_SEPARATOR,
+          syscall_array_op_count[syscall_index])
+      }
     }
-    printf("\n")
+    else
+    {
+      # Summary in txt format
+      split(FIRST_STRACE_TS,a,".")
+      strace_start = strftime("%Y-%m-%d-%H.%M.%S", a[1])"."a[2]
+      split(LAST_STRACE_TS,a,".")
+      strace_end = strftime("%Y-%m-%d-%H.%M.%S", a[1])"."a[2]
+      strace_elapse = LAST_STRACE_TS - FIRST_STRACE_TS
+      printf("Summary\n")
+      printf("strace file:   %s\n", STRACE_FILENAME)
+      printf("strace start:  %s\n", strace_start)
+      printf("strace end:    %s\n", strace_end)
+      printf("strace elapse: %-12.6f\n", strace_elapse)
+      printf("\n")
+      printf("%-32s %12s %9s\n", "syscall_operation", "time_spent", "count")
+      for (syscall_index=1;syscall_index<=syscall_array_count;syscall_index++)
+      {
+        printf("%-32s %12.9f %9d\n",
+          syscall_array_operation[syscall_index],
+          syscall_array_op_time_spent[syscall_index],
+          syscall_array_op_count[syscall_index])
+      }
+      printf("\n")
+    }
   }
 }'
 
