@@ -7,6 +7,7 @@ ERROR_MESSAGE=""
 TIME_DELTA_THRESHOLD=2
 OUTPUT_FORMAT="raw"
 SUMMARY="Y"
+STRACE_FILENAME=""
 
 display_usage ()
 {
@@ -87,16 +88,29 @@ awk 'BEGIN{
   syscall_list = ""
   syscall_array_count = 0
 }
-!/resuming|resume/{
+{
+  potential_syscall = ""
   line = $0
   split($2,a,".")
   ts = strftime("%Y-%m-%d-%H.%M.%S", a[1])"."a[2]
-  split($3,c,"(")
+  
+  if (match($3,/\(/))
+  {
+    split($3,c,"(")
+    potential_syscall = c[1]
+  }
+  else
+  {
+    if (match($3,/<.../))
+    {
+      potential_syscall = $4
+    }
+  }
 
   # Match on syscall starting with alphabetic char
-  if(match(c[1],/^[A-Za-z]+$/))
+  if(match(potential_syscall,/^[A-Za-z]+$/))
   {
-    syscall = c[1]
+    syscall = potential_syscall
     syscall_count++
     current_syscall_time = $2
 
