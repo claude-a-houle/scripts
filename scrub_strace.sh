@@ -67,6 +67,9 @@ awk 'BEGIN{
   syscall_count = 0
   syscall_timedelta = 0
   previous_syscall_time = 0
+
+  syscall_list = ""
+  syscall_array_count = 0
 }
 !/resuming|resume/{
   line = $0
@@ -79,9 +82,25 @@ awk 'BEGIN{
     syscall = c[1]
     syscall_count++
     current_syscall_time = $2
+
+    if (index(syscall_list,syscall) == 0)
+    {
+      syscall_list = syscall_list" "syscall
+      syscall_array_count++
+      syscall_array_operation[syscall_array_count] = syscall
+    }
+
     if (syscall_count > 1)
     {
       syscall_timedelta = current_syscall_time - previous_syscall_time
+    }
+
+    for (syscall_index=1;syscall_index<=syscall_array_count;syscall_index++)
+    {
+      if ( syscall == syscall_array_operation[syscall_index] )
+      {
+        syscall_array_op_time_spent[syscall_index] = syscall_array_op_time_spent[syscall_index] + syscall_timedelta
+      }
     }
 
     if ( VERBOSE == "Y" )
@@ -111,17 +130,17 @@ awk 'BEGIN{
     }
     else
     {
-       if ( syscall_timedelta >= TIME_DELTA_THRESHOLD )
-       {
-         printf("%s%s%s%s\033[1;33m%f\033[0m%s[%s]\n",
-           ts,
-           OUTPUT_SEPARATOR,
-           syscall,
-           OUTPUT_SEPARATOR,
-           syscall_timedelta,
-           OUTPUT_SEPARATOR,
-           line)
-       }
+      if ( syscall_timedelta >= TIME_DELTA_THRESHOLD )
+      {
+        printf("%s%s%s%s\033[1;33m%f\033[0m%s[%s]\n",
+          ts,
+          OUTPUT_SEPARATOR,
+          syscall,
+          OUTPUT_SEPARATOR,
+          syscall_timedelta,
+          OUTPUT_SEPARATOR,
+          line)
+      }
     }
     previous_syscall_time = $2
   }
@@ -129,8 +148,10 @@ awk 'BEGIN{
 END{
   if ( OUTPUT_FORMAT == "raw" )
   {
-    printf("\nSummary\n  WIP\n")
-    printf("\n\n")
+    for (syscall_index=1;syscall_index<=syscall_array_count;syscall_index++)
+    {
+      printf("%s,%f\n", syscall_array_operation[syscall_index], syscall_array_op_time_spent[syscall_index])
+    }
   }
 }'
 
