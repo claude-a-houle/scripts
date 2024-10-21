@@ -149,6 +149,7 @@ awk 'BEGIN{
 END{
   if ( OUTPUT_FORMAT == "raw" )
   {
+    printf("\n")
     printf("syscall_op,time_spent,count\n")
     for (syscall_index=1;syscall_index<=syscall_array_count;syscall_index++)
     {
