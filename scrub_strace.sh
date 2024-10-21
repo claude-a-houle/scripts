@@ -57,9 +57,8 @@ if [ $HELP != 0 ]; then
    exit 0
 fi
 
-if [[ "STRACE_FILENAME" == "" ]]; then
-  echo "missing something ? (eg. -f parm should be input file"
-  exit 1
+if [[ "$STRACE_FILENAME" == "" ]]; then
+  error_handler "missing something ? (eg. -f parm should be input file"
 fi
 
 ################################################################################
