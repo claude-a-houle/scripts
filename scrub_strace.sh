@@ -21,6 +21,13 @@ Usage: $BASENAME -f <strace_filename> [--timedelta] [--csv] [-v] [-h|--help]
 "
 }
 
+function error_handler
+{
+   echo "$BASENAME: $1"
+   display_usage
+   exit 1
+}
+
 while [ "$1" != "" ]
 do
    case $1 in
@@ -33,13 +40,6 @@ do
          *) shift; ERROR_MESSAGE="Invalid Parameter -- $PARAMS";;
    esac
 done
-
-function error_handler
-{
-   echo "$BASENAME: $1"
-   display_usage
-   exit 1
-}
 
 if [ "$ERROR_MESSAGE" != "" ]; then
    error_handler "$ERROR_MESSAGE"
