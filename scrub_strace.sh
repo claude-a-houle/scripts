@@ -61,7 +61,7 @@ fi
 ################################################################################
 ### Meat and potatoes of processing the strace file 
 ################################################################################
-FIRST_STRACE_TS=$( awk '!/resuming|resume/{print $2}' "$STRACE_FILENAME" | head -1)
+FIRST_STRACE_TS=$(awk '!/resuming|resume/{print $2}' "$STRACE_FILENAME" | head -1)
 LAST_STRACE_TS=$(awk '!/resuming|resume/{print $2}' "$STRACE_FILENAME" | tail -1)
 
 cat "$STRACE_FILENAME" | \
@@ -167,6 +167,7 @@ END{
   printf("\n")
   if ( OUTPUT_FORMAT == "csv" )
   {
+    # Summary in CSV (less info, but easier to copy/paste into s/s of course)
     printf("syscall_operation,time_spent,count\n")
     for (syscall_index=1;syscall_index<=syscall_array_count;syscall_index++)
     {
@@ -180,6 +181,7 @@ END{
   }
   else
   {
+    # Summary in txt format
     split(FIRST_STRACE_TS,a,".")
     strace_start = strftime("%Y-%m-%d-%H.%M.%S", a[1])"."a[2]
     split(LAST_STRACE_TS,a,".")
