@@ -28,6 +28,9 @@ function error_handler
    exit 1
 }
 
+################################################################################
+### Process Input Parms
+################################################################################
 while [ "$1" != "" ]
 do
    case $1 in
@@ -55,14 +58,23 @@ if [[ "STRACE_FILENAME" == "" ]]; then
   exit 1
 fi
 
+################################################################################
+### Meat and potatoes of processing the strace file 
+################################################################################
+FIRST_STRACE_TS=$( awk '!/resuming|resume/{print $2}' "$STRACE_FILENAME" | head -1)
+LAST_STRACE_TS=$(awk '!/resuming|resume/{print $2}' "$STRACE_FILENAME" | tail -1)
+
 cat "$STRACE_FILENAME" | \
 awk 'BEGIN{
+  STRACE_FILENAME = "'"$STRACE_FILENAME"'"
   VERBOSE = "'"$VERBOSE"'"
   TIME_DELTA_THRESHOLD = "'"$TIME_DELTA_THRESHOLD"'"
   TIME_DELTA_THRESHOLD = TIME_DELTA_THRESHOLD + 0
   OUTPUT_FORMAT = "'"$OUTPUT_FORMAT"'"
   OUTPUT_SEPARATOR = " "
   if ( OUTPUT_FORMAT == "csv" ) { OUTPUT_SEPARATOR = "," }
+  FIRST_STRACE_TS = "'"$FIRST_STRACE_TS"'"
+  LAST_STRACE_TS = "'"$LAST_STRACE_TS"'"
 
   syscall_count = 0
   syscall_timedelta = 0
@@ -77,12 +89,14 @@ awk 'BEGIN{
   ts = strftime("%Y-%m-%d-%H.%M.%S", a[1])"."a[2]
   split($3,c,"(")
 
+  # Match on syscall starting with alphabetic char
   if(match(c[1],/^[A-Za-z]+$/))
   {
     syscall = c[1]
     syscall_count++
     current_syscall_time = $2
 
+    # start building array of syscall op, count, and time spent
     if (index(syscall_list,syscall) == 0)
     {
       syscall_list = syscall_list" "syscall
@@ -104,8 +118,10 @@ awk 'BEGIN{
       }
     }
 
+    # Using verbose just spits out everything...duh
     if ( VERBOSE == "Y" )
     {
+      # pretty color for syscall_timedelta if you need that to stand out
       if ( syscall_timedelta >= TIME_DELTA_THRESHOLD )
       {
         printf("%s%s%s%s033[1;33m%f\033[0m%s[%s]\n", 
@@ -131,6 +147,7 @@ awk 'BEGIN{
     }
     else
     {
+      # pretty color for syscall_timedelta, but a shorter list than using verbose
       if ( syscall_timedelta >= TIME_DELTA_THRESHOLD )
       {
         printf("%s%s%s%s\033[1;33m%f\033[0m%s[%s]\n",
@@ -163,7 +180,17 @@ END{
   }
   else
   {
+    split(FIRST_STRACE_TS,a,".")
+    strace_start = strftime("%Y-%m-%d-%H.%M.%S", a[1])"."a[2]
+    split(LAST_STRACE_TS,a,".")
+    strace_end = strftime("%Y-%m-%d-%H.%M.%S", a[1])"."a[2]
+    strace_elapse = LAST_STRACE_TS - FIRST_STRACE_TS
     printf("Summary\n")
+    printf("strace file:   %s\n", STRACE_FILENAME)
+    printf("strace start:  %s\n", strace_start)
+    printf("strace end:    %s\n", strace_end)
+    printf("strace elapse: %-12.6f\n", strace_elapse)
+    printf("\n")
     printf("%-32s %12s %9s\n", "syscall_operation", "time_spent", "count")
     for (syscall_index=1;syscall_index<=syscall_array_count;syscall_index++)
     {
